@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ChainForecast</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+      body { margin: 0; background: #08111f; color: #e9f0ff; }
+      main { max-width: 900px; margin: 0 auto; padding: 56px 20px; }
+      h1 { font-size: clamp(2.4rem, 8vw, 5rem); margin: 0; letter-spacing: -0.06em; }
+      .accent { color: #7cf2c2; }
+      .subtitle { color: #9eb0ca; max-width: 650px; line-height: 1.6; }
+      form, .card { background: #101d31; border: 1px solid #263852; border-radius: 16px; padding: 22px; }
+      form { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 32px 0 18px; }
+      input, button { border-radius: 10px; border: 1px solid #3b5271; padding: 12px 14px; font: inherit; }
+      input { background: #07101d; color: white; }
+      button { background: #7cf2c2; color: #082019; border: 0; font-weight: 700; cursor: pointer; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+      .metric { background: #0a1627; border-radius: 12px; padding: 15px; }
+      .metric span { display: block; color: #91a4bf; font-size: .82rem; }
+      .metric strong { font-size: 1.35rem; }
+      .hash { overflow-wrap: anywhere; color: #7cf2c2; font-family: ui-monospace, monospace; }
+      #status { color: #9eb0ca; }
+      .hidden { display: none; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Chain<span class="accent">Forecast</span></h1>
+      <p class="subtitle">Explainable stock pattern matching with Dynamic Time Warping and optional blockchain verification. Educational use only.</p>
+      <form id="prediction-form">
+        <label>Ticker <input name="ticker" value="AAPL" maxlength="12"></label>
+        <label><input name="demo" type="checkbox" checked> Demo mode (no network)</label>
+        <button type="submit">Analyze</button>
+      </form>
+      <p id="status">Ready.</p>
+      <section id="result" class="card hidden">
+        <div class="grid">
+          <div class="metric"><span>Signal</span><strong id="signal"></strong></div>
+          <div class="metric"><span>Expected 5-day return</span><strong id="return"></strong></div>
+          <div class="metric"><span>Confidence</span><strong id="confidence"></strong></div>
+          <div class="metric"><span>Latest price</span><strong id="price"></strong></div>
+          <div class="metric"><span>RSI (14)</span><strong id="rsi"></strong></div>
+          <div class="metric"><span>Annualized volatility</span><strong id="volatility"></strong></div>
+        </div>
+        <p>Prediction fingerprint</p>
+        <p id="hash" class="hash"></p>
+        <p id="blockchain"></p>
+      </section>
+    </main>
+    <script>
+      const form = document.querySelector('#prediction-form');
+      const result = document.querySelector('#result');
+      const status = document.querySelector('#status');
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        status.textContent = 'Analyzing historical patterns...';
+        result.classList.add('hidden');
+        const data = new FormData(form);
+        const response = await fetch('/api/predict', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ticker: data.get('ticker'), demo: data.get('demo') === 'on'})
+        });
+        const payload = await response.json();
+        if (!response.ok) { status.textContent = payload.error; return; }
+        document.querySelector('#signal').textContent = payload.signal;
+        document.querySelector('#return').textContent = `${payload.expected_return_percent}%`;
+        document.querySelector('#confidence').textContent = `${payload.confidence_percent}%`;
+        document.querySelector('#price').textContent = `$${payload.latest_price}`;
+        document.querySelector('#rsi').textContent = payload.rsi_14;
+        document.querySelector('#volatility').textContent = `${payload.annualized_volatility_percent}%`;
+        document.querySelector('#hash').textContent = payload.prediction_hash;
+        document.querySelector('#blockchain').textContent = `Blockchain: ${payload.blockchain_status}`;
+        status.textContent = `Completed in ${payload.mode} mode.`;
+        result.classList.remove('hidden');
+      });
+    </script>
+  </body>
+</html>
+

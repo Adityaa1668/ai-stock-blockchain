@@ -1,0 +1,8 @@
+Flask==3.1.0
+numpy==2.1.3
+pandas==2.2.3
+yfinance==0.2.54
+web3==7.8.0
+python-dotenv==1.0.1
+pytest==8.3.4
+
